@@ -150,7 +150,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			return 0;
 		}
 
-		SetTimer(hwnd, ID_TIMEREXPIRED, 500, NULL);
+		// Bounded handshake probe. A caller using SHOpenFolderAndSelectItems usually
+		// hands the selection over almost immediately; 500 ms delayed every folder
+		// open by half a second, so keep the window small.
+		SetTimer(hwnd, ID_TIMEREXPIRED, 100, NULL);
 
 		MSG msg = { };
 		while (GetMessage(&msg, NULL, 0, 0) > 0)
@@ -165,23 +168,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		auto launchFiles = [&](const wchar_t* verb, const std::wstring& target, bool waitForActivation) -> bool
 		{
+			// Launch the alias executable directly with arguments. The previous
+			// files-dev:?cmd=<hex> protocol hop went through the shell protocol handler
+			// chain and added roughly half a second to every activation.
 			TCHAR args[1024];
-			swprintf(args, _countof(args) - 1, L"\"%s\" %s \"%s\"", szBuf, verb, target.c_str());
+			swprintf(args, _countof(args) - 1, L"%s \"%s\"", verb, target.c_str());
 
-			std::wstring uriWithArgs = L"files-dev:?cmd=" + str2wstr(wstring_to_utf8_hex(args));
-
-			std::wcout << L"Invoking: " << args << L" = " << uriWithArgs << std::endl;
+			std::wcout << L"Invoking: " << szBuf << L" " << args << std::endl;
 
 			SHELLEXECUTEINFO ShExecInfo = { 0 };
 			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 			ShExecInfo.fMask = SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI | SEE_MASK_NOCLOSEPROCESS;
-			ShExecInfo.lpFile = uriWithArgs.c_str();
+			ShExecInfo.lpFile = szBuf;
+			ShExecInfo.lpParameters = args;
 			ShExecInfo.lpDirectory = openDirectory;
 			ShExecInfo.nShow = SW_SHOW;
 
 			if (!ShellExecuteEx(&ShExecInfo))
 			{
-				std::wcout << L"Protocol error: " << GetLastError() << std::endl;
+				std::wcout << L"Launch error: " << GetLastError() << std::endl;
 				return false;
 			}
 
