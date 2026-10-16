@@ -28,9 +28,6 @@ namespace Files.App.Data.Contexts
 		bool IsMultiPaneAvailable { get; }
 		bool IsMultiPaneActive { get; }
 
-		bool IsGitRepository { get; }
-		bool CanExecuteGitAction { get; }
-
 		string? SolutionFilePath { get; }
 	}
 }

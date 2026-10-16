@@ -61,7 +61,7 @@
 		<Setter Property="Background" Value="{ThemeResource TabViewItemHeaderBackground}" />
 		<Setter Property="HorizontalContentAlignment" Value="Left" />
 		<Setter Property="UseSystemFocusVisuals" Value="{StaticResource UseSystemFocusVisuals}" />
-		<Setter Property="MinHeight" Value="{ThemeResource TabViewItemMinHeight}" />
+		<Setter Property="MinHeight" Value="28" />
 		<Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}" />
 		<Setter Property="BorderThickness" Value="{ThemeResource TabViewItemBorderThickness}" />
 		<Setter Property="BorderBrush" Value="{ThemeResource TabViewItemBorderBrush}" />

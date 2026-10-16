@@ -241,8 +241,8 @@
 
 			<controls:OmnibarMode
 				x:Name="OmnibarPathMode"
-				IconOnActive="{controls:ThemedIconMarkup Style={StaticResource App.ThemedIcons.Omnibar.Path}, IsFilled=True}"
-				IconOnInactive="{controls:ThemedIconMarkup Style={StaticResource App.ThemedIcons.Omnibar.Path}, IconType=Outline}"
+				IconOnActive="{controls:ThemedIconMarkup Style={StaticResource App.ThemedIcons.Folder}, IconType=Outline}"
+				IconOnInactive="{controls:ThemedIconMarkup Style={StaticResource App.ThemedIcons.Folder}, IconType=Outline}"
 				IsDefault="True"
 				ItemsSource="{x:Bind ViewModel.PathModeSuggestionItems, Mode=OneWay}"
 				ModeName="{x:Bind Commands.EditPath.LabelWithHotKey, Mode=OneWay}"

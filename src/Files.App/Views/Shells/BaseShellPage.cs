@@ -22,9 +22,7 @@ namespace Files.App.Views.Shells
 
 		private DateTimeFormats _lastDateTimeFormats;
 
-		private Task _gitFetch = Task.CompletedTask;
 
-		private CancellationTokenSource _gitFetchToken = new CancellationTokenSource();
 
 		public static readonly DependencyProperty NavParamsProperty =
 			DependencyProperty.Register(
@@ -84,15 +82,10 @@ namespace Files.App.Views.Shells
 			{
 				if (value != _ContentPage)
 				{
-					if (_ContentPage is not null)
-						_ContentPage.StatusBarViewModel.CheckoutRequested -= GitCheckout_Required;
-
 					_ContentPage = value;
 
 					NotifyPropertyChanged(nameof(ContentPage));
 					NotifyPropertyChanged(nameof(SlimContentPage));
-					if (value is not null)
-						value.StatusBarViewModel.CheckoutRequested += GitCheckout_Required;
 				}
 			}
 		}
@@ -216,7 +209,6 @@ namespace Files.App.Views.Shells
 
 			PreviewKeyDown += ShellPage_PreviewKeyDown;
 
-			GitHelpers.GitFetchCompleted += FilesystemViewModel_GitDirectoryUpdated;
 
 			userSettingsService.AppearanceSettingsService.PropertyChanged += AppearanceSettingsService_PropertyChanged;
 
@@ -275,7 +267,7 @@ namespace Files.App.Views.Shells
 			contentPage.ItemManipulationModel.SetSelectedItems(e);
 		}
 
-		protected async void FilesystemViewModel_DirectoryInfoUpdated(object? sender, EventArgs e)
+		protected void FilesystemViewModel_DirectoryInfoUpdated(object? sender, EventArgs e)
 		{
 			if (ContentPage is null)
 				return;
@@ -284,99 +276,13 @@ namespace Files.App.Views.Shells
 
 			var directoryItemCountLocalization = Strings.Items.GetLocalizedFormatResource(shellViewModel.FilesAndFolders.Count);
 
-			BranchItem? headBranch = InstanceViewModel.IsGitRepository
-					? await GitHelpers.GetRepositoryHead(InstanceViewModel.GitRepositoryPath)
-					: null;
-
-			shellViewModel = this.GetRequiredShellViewModel();
-
-			if (InstanceViewModel.GitRepositoryPath != shellViewModel.GitDirectory)
-			{
-				InstanceViewModel.GitRepositoryPath = shellViewModel.GitDirectory;
-				InstanceViewModel.IsGitRepository = shellViewModel.IsValidGitDirectory;
-
-				InstanceViewModel.GitBranchName = headBranch is not null
-					? headBranch.Name
-					: string.Empty;
-
-				var isGitFetchCanceled = false;
-				if (!_gitFetch.IsCompleted)
-				{
-					var canceledFetch = _gitFetch;
-					var canceledFetchToken = _gitFetchToken;
-					canceledFetchToken.Cancel();
-					_ = canceledFetch.ContinueWith(
-						_ => canceledFetchToken.Dispose(),
-						CancellationToken.None,
-						TaskContinuationOptions.ExecuteSynchronously,
-						TaskScheduler.Default);
-					_gitFetchToken = new CancellationTokenSource();
-					isGitFetchCanceled = true;
-				}
-				if (InstanceViewModel.IsGitRepository && (!GitHelpers.IsExecutingGitAction || isGitFetchCanceled))
-				{
-					_gitFetch = GitHelpers.FetchOriginAsync(InstanceViewModel.GitRepositoryPath, cancellationToken: _gitFetchToken.Token);
-				}
-			}
-
 			var contentPage = ContentPage;
 			if (contentPage is null)
 				return;
 
-			if (!GitHelpers.IsExecutingGitAction)
-			{
-				contentPage.StatusBarViewModel.UpdateGitInfo(
-					InstanceViewModel.IsGitRepository,
-					InstanceViewModel.GitRepositoryPath,
-					headBranch);
-			}
-
 			contentPage.StatusBarViewModel.DirectoryItemCount = $"{shellViewModel.FilesAndFolders.Count} {directoryItemCountLocalization}";
 			contentPage.InfoPaneViewModel.DirectoryItemCount = $"{shellViewModel.FilesAndFolders.Count} {directoryItemCountLocalization}";
 			contentPage.UpdateSelectionSize();
-		}
-
-		protected async void FilesystemViewModel_GitDirectoryUpdated(object? sender, EventArgs e)
-		{
-			if (GitHelpers.IsExecutingGitAction)
-				return;
-
-			var head = InstanceViewModel.IsGitRepository
-				? await GitHelpers.GetRepositoryHead(InstanceViewModel.GitRepositoryPath)
-				: null;
-
-			InstanceViewModel.GitBranchName = head is not null
-				? head.Name
-				: string.Empty;
-
-			ContentPage?.StatusBarViewModel.UpdateGitInfo(
-				InstanceViewModel.IsGitRepository,
-				InstanceViewModel.GitRepositoryPath,
-				head);
-		}
-
-		protected async void GitCheckout_Required(object? sender, string branchName)
-		{
-			var shellViewModel = this.GetRequiredShellViewModel();
-
-			if (!await GitHelpers.Checkout(shellViewModel.GitDirectory, branchName))
-			{
-				var contentPage = ContentPage
-					?? throw new InvalidOperationException("The content page is not available after Git checkout failed.");
-
-				contentPage.StatusBarViewModel.ShowLocals = true;
-				contentPage.StatusBarViewModel.SelectedBranchIndex = StatusBarViewModel.ACTIVE_BRANCH_INDEX;
-			}
-			else
-			{
-				var contentPage = ContentPage
-					?? throw new InvalidOperationException("The content page is not available after Git checkout.");
-
-				contentPage.StatusBarViewModel.UpdateGitInfo(
-					InstanceViewModel.IsGitRepository,
-					InstanceViewModel.GitRepositoryPath,
-					await GitHelpers.GetRepositoryHead(InstanceViewModel.GitRepositoryPath));
-			}
 		}
 
 		protected virtual void Page_Loaded(object sender, RoutedEventArgs e)
@@ -933,7 +839,6 @@ namespace Files.App.Views.Shells
 				ShellViewModel.DirectoryInfoUpdated -= FilesystemViewModel_DirectoryInfoUpdated;
 				ShellViewModel.PageTypeUpdated -= FilesystemViewModel_PageTypeUpdated;
 				ShellViewModel.OnSelectionRequestedEvent -= FilesystemViewModel_OnSelectionRequestedEvent;
-				ShellViewModel.GitDirectoryUpdated -= FilesystemViewModel_GitDirectoryUpdated;
 				ShellViewModel.Dispose();
 			}
 
@@ -943,7 +848,6 @@ namespace Files.App.Views.Shells
 			ContentPage = null!;
 			ItemDisplay.Content = null;
 
-			GitHelpers.GitFetchCompleted -= FilesystemViewModel_GitDirectoryUpdated;
 
 			App.AppModel.PropertyChanged -= AppModel_PropertyChanged;
 
@@ -954,13 +858,6 @@ namespace Files.App.Views.Shells
 				_updateDateDisplayTimer = null;
 			}
 			cancellationTokenSource.Dispose();
-			var gitFetchToken = _gitFetchToken;
-			gitFetchToken.Cancel();
-			_ = _gitFetch.ContinueWith(
-				_ => gitFetchToken.Dispose(),
-				CancellationToken.None,
-				TaskContinuationOptions.ExecuteSynchronously,
-				TaskScheduler.Default);
 		}
 	}
 }

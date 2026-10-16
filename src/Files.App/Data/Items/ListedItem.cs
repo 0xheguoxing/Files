@@ -472,7 +472,6 @@ namespace Files.App.Utils
 		public bool IsFtpItem => this is FtpItem;
 		public bool IsArchive => this is ZipItem;
 		public bool IsAlternateStream => this is AlternateStreamItem;
-		public bool IsGitItem => this is IGitItem;
 		public virtual bool IsExecutable => !IsFolder && FileExtensionHelpers.IsExecutableFile(ItemPath);
 		public virtual bool IsScriptFile => FileExtensionHelpers.IsScriptFile(ItemPath);
 		public bool IsPinned => App.QuickAccessManager.Model.PinnedFolders.Contains(this.GetRequiredPath());
@@ -489,7 +488,6 @@ namespace Files.App.Utils
 		// This is a hack used because x:Bind casting did not work properly
 		public RecycleBinItem? AsRecycleBinItem => this as RecycleBinItem;
 
-		public GitItem? AsGitItem => this as GitItem;
 
 		public string? Key { get; set; }
 
@@ -708,135 +706,6 @@ namespace Files.App.Utils
 		}
 	}
 
-	public partial class GitItem : ListedItem, IGitItem
-	{
-		private volatile int statusPropertiesInitialized = 0;
-		public bool StatusPropertiesInitialized
-		{
-			get => statusPropertiesInitialized == 1;
-			set => Interlocked.Exchange(ref statusPropertiesInitialized, value ? 1 : 0);
-		}
-
-		private volatile int commitPropertiesInitialized = 0;
-		public bool CommitPropertiesInitialized
-		{
-			get => commitPropertiesInitialized == 1;
-			set => Interlocked.Exchange(ref commitPropertiesInitialized, value ? 1 : 0);
-		}
-
-		private Style? _UnmergedGitStatusIcon;
-		public Style? UnmergedGitStatusIcon
-		{
-			get => _UnmergedGitStatusIcon;
-			set => SetProperty(ref _UnmergedGitStatusIcon, value);
-		}
-
-		private string? _UnmergedGitStatusName;
-		public string? UnmergedGitStatusName
-		{
-			get => _UnmergedGitStatusName;
-			set => SetProperty(ref _UnmergedGitStatusName, value);
-		}
-
-		private DateTimeOffset? _GitLastCommitDate;
-		public DateTimeOffset? GitLastCommitDate
-		{
-			get => _GitLastCommitDate;
-			set
-			{
-				SetProperty(ref _GitLastCommitDate, value);
-				GitLastCommitDateHumanized = CreateGitLastCommitDateHumanized(value);
-			}
-		}
-
-
-		public override bool IsRealChanges => base.IsRealChanges
-			|| GitLastCommitDateHumanized != CreateGitLastCommitDateHumanized(GitLastCommitDate);
-
-		public override void UpdateReal()
-		{
-			base.UpdateReal();
-
-			GitLastCommitDateHumanized = CreateGitLastCommitDateHumanized(GitLastCommitDate);
-		}
-
-		private string CreateGitLastCommitDateHumanized(DateTimeOffset? dateTimeOffset)
-		{
-			return dateTimeOffset is DateTimeOffset dto ? dateTimeFormatter.ToShortLabel(dto) : "";
-		}
-
-		private string? _GitLastCommitDateHumanized;
-		public string? GitLastCommitDateHumanized
-		{
-			get => _GitLastCommitDateHumanized;
-			set => SetProperty(ref _GitLastCommitDateHumanized, value);
-		}
-
-		private string? _GitLastCommitMessage;
-		public string? GitLastCommitMessage
-		{
-			get => _GitLastCommitMessage;
-			set => SetProperty(ref _GitLastCommitMessage, value);
-		}
-
-		private string? _GitCommitAuthor;
-		public string? GitLastCommitAuthor
-		{
-			get => _GitCommitAuthor;
-			set => SetProperty(ref _GitCommitAuthor, value);
-		}
-
-		private string? _GitLastCommitSha;
-		public string? GitLastCommitSha
-		{
-			get => _GitLastCommitSha;
-			set => SetProperty(ref _GitLastCommitSha, value);
-		}
-
-		private string? _GitLastCommitFullSha;
-		public string? GitLastCommitFullSha
-		{
-			get => _GitLastCommitFullSha;
-			set => SetProperty(ref _GitLastCommitFullSha, value);
-		}
-	}
-	public sealed partial class GitShortcutItem : GitItem, IShortcutItem
-	{
-		public string? TargetPath { get; set; }
-
-		public override string Name
-			=> IsSymLink ? base.Name! : Path.GetFileNameWithoutExtension(ItemNameRaw)!; // Always hide extension for shortcuts
-
-		public string? Arguments { get; set; }
-		public string? WorkingDirectory { get; set; }
-		public bool RunAsAdmin { get; set; }
-		public SHOW_WINDOW_CMD ShowWindowCommand { get; set; }
-		public bool IsUrl { get; set; }
-		public bool IsSymLink { get; set; }
-		public override bool IsScriptFile => FileExtensionHelpers.IsScriptFile(TargetPath);
-		public override bool IsExecutable => FileExtensionHelpers.IsExecutableFile(TargetPath, true);
-	}
-	public interface IGitItem : IListedItem
-	{
-		public bool StatusPropertiesInitialized { get; set; }
-		public bool CommitPropertiesInitialized { get; set; }
-
-		public Style? UnmergedGitStatusIcon { get; set; }
-
-		public string? UnmergedGitStatusName { get; set; }
-
-		public DateTimeOffset? GitLastCommitDate { get; set; }
-
-		public string? GitLastCommitDateHumanized { get; set; }
-
-		public string? GitLastCommitMessage { get; set; }
-
-		public string? GitLastCommitAuthor { get; set; }
-
-		public string? GitLastCommitSha { get; set; }
-
-		public string? GitLastCommitFullSha { get; set; }
-	}
 	public interface IShortcutItem : IListedItem
 	{
 		public string? TargetPath { get; set; }

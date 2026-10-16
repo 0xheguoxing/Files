@@ -213,7 +213,6 @@ namespace Files.App.Views
 			// Safely access nested properties with null checks
 			var statusBarViewModel = SidebarAdaptiveViewModel?.PaneHolder?.ActivePaneOrColumn?.SlimContentPage?.StatusBarViewModel;
 			if (statusBarViewModel is not null)
-				statusBarViewModel.ShowLocals = true;
 
 			UpdateNavToolbarProperties();
 			LoadPaneChanged();

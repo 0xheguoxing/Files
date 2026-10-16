@@ -43,9 +43,6 @@ namespace Files.App.Actions
 				$"& {Win32Helper.ToPowerShellStringLiteral(_devToolsSettingsService.IDEPath)} {Win32Helper.ToPowerShellStringLiteral(workingDirectory)}",
 				PowerShellExecutionOptions.Hidden
 			);
-
-			if (!res)
-				await DynamicDialogFactory.ShowFor_IDEErrorDialog(_devToolsSettingsService.IDEName);
 		}
 
 		private void Context_PropertyChanged(object? sender, PropertyChangedEventArgs e)

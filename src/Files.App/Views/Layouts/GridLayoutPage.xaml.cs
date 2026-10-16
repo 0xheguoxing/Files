@@ -694,16 +694,6 @@ namespace Files.App.Views.Layouts
 					await shellViewModel.LoadExtendedItemPropertiesAsync(listedItem);
 			}
 
-			if (shellViewModel.EnabledGitProperties is not GitProperties.None)
-			{
-				await Task.WhenAll(filesAndFolders.Select(item =>
-				{
-					if (item is IGitItem gitItem)
-						return shellViewModel.LoadGitPropertiesAsync(gitItem);
-
-					return Task.CompletedTask;
-				}));
-			}
 		}
 
 		[DynamicWindowsRuntimeCast(typeof(FrameworkElement))]
@@ -987,8 +977,7 @@ namespace Files.App.Views.Layouts
 				// Handle visual states
 				// Show checkboxes when items are selected (as long as the setting is enabled)
 				// Show checkboxes when hovering over the checkbox area (regardless of the setting to hide them)
-				if (UserSettingsService.FoldersSettingsService.ShowCheckboxesWhenSelectingItems && control.IsSelected
-					|| isPointerOver)
+				if (UserSettingsService.FoldersSettingsService.ShowCheckboxesWhenSelectingItems && control.IsSelected)
 					VisualStateManager.GoToState(userControl, "ShowCheckbox", true);
 				else
 					VisualStateManager.GoToState(userControl, "HideCheckbox", true);

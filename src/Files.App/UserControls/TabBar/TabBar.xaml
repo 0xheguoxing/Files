@@ -74,7 +74,7 @@
 		<!--  TabBar + Draggable Right Padding  -->
 		<TabView
 			x:Name="HorizontalTabView"
-			Margin="0,10,0,0"
+			Margin="0,0,0,0"
 			Padding="0"
 			VerticalAlignment="Stretch"
 			AllowDropTabs="True"
@@ -98,7 +98,7 @@
 			<TabView.TabStripHeader>
 				<Button
 					Width="30"
-					Height="30"
+					Height="28"
 					Margin="4,0,-2,0"
 					Padding="0"
 					VerticalAlignment="Center"
@@ -236,7 +236,7 @@
 						x:Name="TabBarAddNewTabButton"
 						Grid.Column="0"
 						Width="30"
-						Height="30"
+						Height="28"
 						Padding="8"
 						HorizontalAlignment="Left"
 						VerticalAlignment="Center"

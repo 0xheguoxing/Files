@@ -280,55 +280,6 @@
 
 									<!--  (Divider)  -->
 									<MenuFlyoutSeparator />
-
-									<!--  Git Columns  -->
-									<MenuFlyoutSubItem
-										x:Name="GitColumnsVisibilityMenuFlyoutSubItem"
-										Text="{helpers:ResourceString Name=Git}"
-										Visibility="{x:Bind InstanceViewModel.IsGitRepository, Mode=OneWay}">
-
-										<!--  Git Unmerged File Kind  -->
-										<ToggleMenuFlyoutItem
-											x:Name="GitStatusColumnVisibilityToggleMenuFlyoutItem"
-											Click="ToggleMenuFlyoutItem_Click"
-											IsChecked="{x:Bind ColumnsViewModel.GitStatusColumn.UserCollapsed, Mode=TwoWay, Converter={StaticResource BoolNegationConverter}}"
-											Text="{helpers:ResourceString Name=GitStatus}"
-											Visibility="{x:Bind ColumnsViewModel.GitStatusColumn.IsHidden, Mode=OneWay, Converter={StaticResource NegatedBoolToVisibilityConverter}}" />
-
-										<!--  Git Last Commit Date  -->
-										<ToggleMenuFlyoutItem
-											x:Name="GitCommitDateColumnToggleMenuFlyoutItem"
-											Click="ToggleMenuFlyoutItem_Click"
-											IsChecked="{x:Bind ColumnsViewModel.GitLastCommitDateColumn.UserCollapsed, Mode=TwoWay, Converter={StaticResource BoolNegationConverter}}"
-											Text="{helpers:ResourceString Name=DateCommitted}"
-											Visibility="{x:Bind ColumnsViewModel.GitLastCommitDateColumn.IsHidden, Mode=OneWay, Converter={StaticResource NegatedBoolToVisibilityConverter}}" />
-
-										<!--  Git Last Commit Message  -->
-										<ToggleMenuFlyoutItem
-											x:Name="GitCommititMessageColumnToggleMenuFlyoutItem"
-											Click="ToggleMenuFlyoutItem_Click"
-											IsChecked="{x:Bind ColumnsViewModel.GitLastCommitMessageColumn.UserCollapsed, Mode=TwoWay, Converter={StaticResource BoolNegationConverter}}"
-											Text="{helpers:ResourceString Name=CommitMessage}"
-											Visibility="{x:Bind ColumnsViewModel.GitLastCommitMessageColumn.IsHidden, Mode=OneWay, Converter={StaticResource NegatedBoolToVisibilityConverter}}" />
-
-										<!--  Git Last Commit Author  -->
-										<ToggleMenuFlyoutItem
-											x:Name="GitCommitAuthorColumnToggleMenuFlyoutItem"
-											Click="ToggleMenuFlyoutItem_Click"
-											IsChecked="{x:Bind ColumnsViewModel.GitCommitAuthorColumn.UserCollapsed, Mode=TwoWay, Converter={StaticResource BoolNegationConverter}}"
-											Text="{helpers:ResourceString Name=Author}"
-											Visibility="{x:Bind ColumnsViewModel.GitCommitAuthorColumn.IsHidden, Mode=OneWay, Converter={StaticResource NegatedBoolToVisibilityConverter}}" />
-
-										<!--  Git Last Commit SHA  -->
-										<ToggleMenuFlyoutItem
-											x:Name="GitCommitShaColumnToggleMenuFlyoutItem"
-											Click="ToggleMenuFlyoutItem_Click"
-											IsChecked="{x:Bind ColumnsViewModel.GitLastCommitShaColumn.UserCollapsed, Mode=TwoWay, Converter={StaticResource BoolNegationConverter}}"
-											Text="{helpers:ResourceString Name=CommitSha}"
-											Visibility="{x:Bind ColumnsViewModel.GitLastCommitShaColumn.IsHidden, Mode=OneWay, Converter={StaticResource NegatedBoolToVisibilityConverter}}" />
-
-									</MenuFlyoutSubItem>
-
 									<!--  File Tag  -->
 									<ToggleMenuFlyoutItem
 										x:Name="FileTagColumnVisibilityToggleMenuFlyoutItem"
@@ -434,47 +385,6 @@
 								<!--  (Divider)  -->
 								<ColumnDefinition Width="Auto" />
 
-								<!--  Item Git Status  -->
-								<ColumnDefinition
-									x:Name="GitStatusColumnDefinition"
-									Width="{x:Bind ColumnsViewModel.GitStatusColumn.Length, Mode=OneWay}"
-									MaxWidth="{x:Bind ColumnsViewModel.GitStatusColumn.MaxLength, Mode=OneWay}" />
-
-								<!--  (Divider)  -->
-								<ColumnDefinition Width="Auto" />
-
-								<!--  Item Git Last Commit Date  -->
-								<ColumnDefinition
-									x:Name="GitLastCommitDateColumnDefinition"
-									Width="{x:Bind ColumnsViewModel.GitLastCommitDateColumn.Length, Mode=OneWay}"
-									MaxWidth="{x:Bind ColumnsViewModel.GitLastCommitDateColumn.MaxLength, Mode=OneWay}" />
-
-								<!--  (Divider)  -->
-								<ColumnDefinition Width="Auto" />
-
-								<!--  Item Git Last Commit Message  -->
-								<ColumnDefinition
-									x:Name="GitLastCommitMessageColumnDefinition"
-									Width="{x:Bind ColumnsViewModel.GitLastCommitMessageColumn.Length, Mode=OneWay}"
-									MaxWidth="{x:Bind ColumnsViewModel.GitLastCommitMessageColumn.MaxLength, Mode=OneWay}" />
-
-								<!--  (Divider)  -->
-								<ColumnDefinition Width="Auto" />
-
-								<!--  Item Git Last Commit Author  -->
-								<ColumnDefinition
-									x:Name="GitCommitAuthorColumnDefinition"
-									Width="{x:Bind ColumnsViewModel.GitCommitAuthorColumn.Length, Mode=OneWay}"
-									MaxWidth="{x:Bind ColumnsViewModel.GitCommitAuthorColumn.MaxLength, Mode=OneWay}" />
-
-								<!--  (Divider)  -->
-								<ColumnDefinition Width="Auto" />
-
-								<!--  Item Git Last Commit SHA  -->
-								<ColumnDefinition
-									x:Name="GitLastCommitShaColumnDefinition"
-									Width="{x:Bind ColumnsViewModel.GitLastCommitShaColumn.Length, Mode=OneWay}"
-									MaxWidth="{x:Bind ColumnsViewModel.GitLastCommitShaColumn.MaxLength, Mode=OneWay}" />
 
 								<!--  (Divider)  -->
 								<ColumnDefinition Width="Auto" />
@@ -567,6 +477,7 @@
 							<!--  Select All Check Box  -->
 							<CheckBox
 								x:Name="SelectAllCheckbox"
+								Visibility="Collapsed"
 								Grid.Column="0"
 								Width="20"
 								Height="20"
@@ -1033,78 +944,6 @@
 										</TextBox>
 
 									</Grid>
-
-									<!--  Item Git Status  -->
-									<Border
-										x:Name="ItemGitStatusTextBlock"
-										Width="{Binding Path=ColumnsViewModel.GitStatusColumn.LengthIncludingGridSplitterPixels, ElementName=PageRoot, Mode=OneWay}"
-										Padding="10,0,0,0"
-										HorizontalAlignment="Stretch"
-										VerticalAlignment="Center"
-										x:Load="{x:Bind IsGitItem}">
-										<controls:ThemedIcon
-											Width="16"
-											Height="16"
-											HorizontalAlignment="Left"
-											Style="{x:Bind AsGitItem.UnmergedGitStatusIcon, Mode=OneWay}"
-											ToolTipService.ToolTip="{x:Bind AsGitItem.UnmergedGitStatusName, Mode=OneWay}"
-											Visibility="{Binding Path=ColumnsViewModel.GitStatusColumn.Visibility, ElementName=PageRoot, Mode=OneWay}" />
-									</Border>
-
-									<!--  Item Git Last Commit Date  -->
-									<TextBlock
-										x:Name="ItemGitLastCommitDateTextBlock"
-										Width="{Binding Path=ColumnsViewModel.GitLastCommitDateColumn.LengthIncludingGridSplitterPixels, ElementName=PageRoot, Mode=OneWay}"
-										Padding="10,0,0,0"
-										HorizontalAlignment="Stretch"
-										VerticalAlignment="Center"
-										x:Load="{x:Bind IsGitItem}"
-										DataContextChanged="TextBlock_DataContextChanged"
-										IsTextTrimmedChanged="TextBlock_IsTextTrimmedChanged"
-										Style="{StaticResource ColumnContentTextBlock}"
-										Text="{x:Bind AsGitItem.GitLastCommitDateHumanized, Mode=OneWay}"
-										Visibility="{Binding Path=ColumnsViewModel.GitLastCommitDateColumn.Visibility, ElementName=PageRoot, Mode=OneWay}" />
-
-									<!--  Item Git Last Commit Message  -->
-									<TextBlock
-										x:Name="ItemGitLastCommitMessageTextBlock"
-										Width="{Binding Path=ColumnsViewModel.GitLastCommitMessageColumn.LengthIncludingGridSplitterPixels, ElementName=PageRoot, Mode=OneWay}"
-										Padding="10,0,0,0"
-										HorizontalAlignment="Stretch"
-										VerticalAlignment="Center"
-										x:Load="{x:Bind IsGitItem}"
-										DataContextChanged="TextBlock_DataContextChanged"
-										IsTextTrimmedChanged="TextBlock_IsTextTrimmedChanged"
-										Style="{StaticResource ColumnContentTextBlock}"
-										Text="{x:Bind AsGitItem.GitLastCommitMessage, Mode=OneWay}"
-										Visibility="{Binding Path=ColumnsViewModel.GitLastCommitMessageColumn.Visibility, ElementName=PageRoot, Mode=OneWay}" />
-
-									<!--  Item Git Last Commit Author  -->
-									<TextBlock
-										x:Name="ItemGitCommitAuthorTextBlock"
-										Width="{Binding Path=ColumnsViewModel.GitCommitAuthorColumn.LengthIncludingGridSplitterPixels, ElementName=PageRoot, Mode=OneWay}"
-										Padding="10,0,0,0"
-										HorizontalAlignment="Stretch"
-										VerticalAlignment="Center"
-										x:Load="{x:Bind IsGitItem}"
-										DataContextChanged="TextBlock_DataContextChanged"
-										IsTextTrimmedChanged="TextBlock_IsTextTrimmedChanged"
-										Style="{StaticResource ColumnContentTextBlock}"
-										Text="{x:Bind AsGitItem.GitLastCommitAuthor, Mode=OneWay}"
-										Visibility="{Binding Path=ColumnsViewModel.GitCommitAuthorColumn.Visibility, ElementName=PageRoot, Mode=OneWay}" />
-
-									<!--  Item Git Last Commit SHA  -->
-									<TextBlock
-										x:Name="ItemGitLastCommitShaTextBlock"
-										Width="{Binding Path=ColumnsViewModel.GitLastCommitShaColumn.LengthIncludingGridSplitterPixels, ElementName=PageRoot, Mode=OneWay}"
-										Padding="10,0,0,0"
-										HorizontalAlignment="Stretch"
-										VerticalAlignment="Center"
-										x:Load="{x:Bind IsGitItem}"
-										Style="{StaticResource ColumnContentTextBlock}"
-										Text="{x:Bind AsGitItem.GitLastCommitSha, Mode=OneWay}"
-										ToolTipService.ToolTip="{x:Bind AsGitItem.GitLastCommitFullSha, Mode=OneWay}"
-										Visibility="{Binding Path=ColumnsViewModel.GitLastCommitShaColumn.Visibility, ElementName=PageRoot, Mode=OneWay}" />
 
 									<!--  Tags That Item Is Labeled  -->
 									<Grid

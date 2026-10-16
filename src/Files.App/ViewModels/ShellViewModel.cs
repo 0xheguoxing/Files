@@ -3,7 +3,6 @@
 
 using Files.App.Services.SizeProvider;
 using Files.Shared.Helpers;
-using LibGit2Sharp;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
@@ -38,18 +37,14 @@ namespace Files.App.ViewModels
 		private readonly SemaphoreSlim getFileOrFolderSemaphore;
 		private readonly SemaphoreSlim bulkOperationSemaphore;
 		private readonly SemaphoreSlim loadThumbnailSemaphore;
-		private readonly SemaphoreSlim gitPropertiesSemaphore;
 		private readonly ConcurrentDictionary<string, CancellationTokenSource> thumbnailRetryDebounce;
 		private readonly ConcurrentQueue<(uint Action, string FileName)> operationQueue;
-		private readonly ConcurrentQueue<uint> gitChangesQueue;
 		private readonly ConcurrentDictionary<string, bool> itemLoadQueue;
 		private readonly AsyncManualResetEvent operationEvent;
-		private readonly AsyncManualResetEvent gitChangedEvent;
 		private readonly DispatcherQueue dispatcherQueue;
 		private readonly string folderTypeTextLocalized = Strings.Folder.GetLocalizedResource();
 
 		private Task? aProcessQueueAction;
-		private Task? gitProcessQueueAction;
 		private volatile Task? desktopIniUpdateTask;
 
 		// Files and folders list for manipulating
@@ -146,27 +141,6 @@ namespace Files.App.ViewModels
 			WorkingDirectory != "ReleaseNotes" &&
 			WorkingDirectory != "Settings";
 
-		private GitProperties _EnabledGitProperties;
-		public GitProperties EnabledGitProperties
-		{
-			get => _EnabledGitProperties;
-			set
-			{
-				if (SetProperty(ref _EnabledGitProperties, value) && value is not GitProperties.None)
-				{
-					foreach (var item in filesAndFolders)
-					{
-						if (item is IGitItem gitItem &&
-							(!gitItem.StatusPropertiesInitialized && value is (GitProperties.All or GitProperties.Status)
-							|| !gitItem.CommitPropertiesInitialized && value is (GitProperties.All or GitProperties.Commit)))
-						{
-							_ = LoadGitPropertiesAsync(gitItem);
-						}
-					}
-				}
-			}
-		}
-
 		public CollectionViewSource? viewSource;
 
 		private FileSystemWatcher? watcher;
@@ -187,15 +161,9 @@ namespace Files.App.ViewModels
 
 		public event EventHandler? DirectoryInfoUpdated;
 
-		public event EventHandler? GitDirectoryUpdated;
-
 		public event EventHandler<List<ListedItem>>? OnSelectionRequestedEvent;
 
 		public string? WorkingDirectory { get; private set; }
-
-		public string? GitDirectory { get; private set; }
-
-		public bool IsValidGitDirectory { get; private set; }
 
 		public List<IniSectionDataItem>? DesktopIni { get; private set; }
 
@@ -257,17 +225,6 @@ namespace Files.App.ViewModels
 			{
 				pathRoot = Path.GetPathRoot(WorkingDirectory);
 			}
-
-			var gitDirectory = await Task.Run(() => GitHelpers.GetGitRepositoryPath(value, pathRoot));
-			if (isDisposed || WorkingDirectory != value)
-				return;
-
-			GitDirectory = gitDirectory;
-			var headName = await GitHelpers.GetRepositoryHeadName(gitDirectory);
-			if (isDisposed || WorkingDirectory != value)
-				return;
-
-			IsValidGitDirectory = !string.IsNullOrEmpty(headName);
 
 			_ = UpdateFolderThumbnailImageSource();
 
@@ -737,7 +694,6 @@ namespace Files.App.ViewModels
 			filesAndFolders = [];
 			FilesAndFolders = [];
 			operationQueue = new ConcurrentQueue<(uint Action, string FileName)>();
-			gitChangesQueue = new ConcurrentQueue<uint>();
 			itemLoadQueue = new ConcurrentDictionary<string, bool>();
 			thumbnailRetryDebounce = new ConcurrentDictionary<string, CancellationTokenSource>();
 			addFilesCTS = new CancellationTokenSource();
@@ -745,12 +701,10 @@ namespace Files.App.ViewModels
 			loadPropsCTS = new CancellationTokenSource();
 			watcherCTS = new CancellationTokenSource();
 			operationEvent = new AsyncManualResetEvent();
-			gitChangedEvent = new AsyncManualResetEvent();
 			enumFolderSemaphore = new SemaphoreSlim(1, 1);
 			getFileOrFolderSemaphore = new SemaphoreSlim(50);
 			bulkOperationSemaphore = new SemaphoreSlim(1, 1);
 			loadThumbnailSemaphore = new SemaphoreSlim(8, 8);
-			gitPropertiesSemaphore = new SemaphoreSlim(1, 1);
 			dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
 			UserSettingsService.OnSettingChangedEvent += UserSettingsService_OnSettingChangedEvent;
@@ -1954,100 +1908,6 @@ namespace Files.App.ViewModels
 			return WindowsSecurityService.IsElevationRequired(!string.IsNullOrEmpty(targetPath) ? targetPath : item.ItemPath);
 		}
 
-		[WinRT.DynamicWindowsRuntimeCast(typeof(Style))]
-		public async Task LoadGitPropertiesAsync(IGitItem gitItem)
-		{
-			var getStatus = EnabledGitProperties is (GitProperties.All or GitProperties.Status) &&
-				!gitItem.StatusPropertiesInitialized;
-			var getCommit = EnabledGitProperties is (GitProperties.All or GitProperties.Commit) &&
-				!gitItem.CommitPropertiesInitialized;
-
-			if (!getStatus && !getCommit)
-				return;
-
-			if (isDisposed)
-				return;
-
-			var token = loadPropsCTS.Token;
-			var semaphoreEntered = false;
-			var propertiesLoaded = false;
-			if (getStatus)
-				gitItem.StatusPropertiesInitialized = true;
-			if (getCommit)
-				gitItem.CommitPropertiesInitialized = true;
-
-			try
-			{
-				await gitPropertiesSemaphore.WaitAsync(token);
-				semaphoreEntered = true;
-
-				var gitItemModel = await Task.Run(() =>
-				{
-					token.ThrowIfCancellationRequested();
-					if (!GitHelpers.IsRepositoryEx(gitItem.ItemPath, out var repositoryPath))
-						return null;
-
-					using var repository = new Repository(repositoryPath);
-					return GitHelpers.GetGitInformationForItem(repository, gitItem.ItemPath, getStatus, getCommit);
-				}, token);
-
-				if (gitItemModel is null)
-					return;
-
-				token.ThrowIfCancellationRequested();
-				await dispatcherQueue.EnqueueOrInvokeAsync(() =>
-				{
-					token.ThrowIfCancellationRequested();
-
-					if (getStatus)
-					{
-						gitItem.UnmergedGitStatusIcon = gitItemModel.Status switch
-						{
-							ChangeKind.Added => (Microsoft.UI.Xaml.Style)Microsoft.UI.Xaml.Application.Current.Resources["App.ThemedIcons.Status.Added"],
-							ChangeKind.Deleted => (Microsoft.UI.Xaml.Style)Microsoft.UI.Xaml.Application.Current.Resources["App.ThemedIcons.Status.Removed"],
-							ChangeKind.Modified => (Microsoft.UI.Xaml.Style)Microsoft.UI.Xaml.Application.Current.Resources["App.ThemedIcons.Status.Modified"],
-							ChangeKind.Untracked => (Microsoft.UI.Xaml.Style)Microsoft.UI.Xaml.Application.Current.Resources["App.ThemedIcons.Status.Removed"],
-							_ => null,
-						};
-						gitItem.UnmergedGitStatusName = gitItemModel.StatusHumanized;
-					}
-
-					if (getCommit)
-					{
-						gitItem.GitLastCommitDate = gitItemModel.LastCommitDate;
-						gitItem.GitLastCommitMessage = gitItemModel.LastCommitMessage;
-						gitItem.GitLastCommitAuthor = gitItemModel.LastCommitAuthor;
-						gitItem.GitLastCommitSha = gitItemModel.LastCommitSha is { Length: >= 7 } sha
-							? sha[..7]
-							: gitItemModel.LastCommitSha;
-						gitItem.GitLastCommitFullSha = gitItemModel.LastCommitSha;
-					}
-				}, Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
-
-				propertiesLoaded = true;
-			}
-			catch (OperationCanceledException) when (token.IsCancellationRequested)
-			{
-			}
-			catch (Exception ex)
-			{
-				App.Logger.LogWarning(ex, "Failed to load Git properties for '{ItemPath}'.", LogPathHelper.RedactPath(gitItem.ItemPath));
-			}
-			finally
-			{
-				if (!propertiesLoaded)
-				{
-					if (getStatus)
-						gitItem.StatusPropertiesInitialized = false;
-					if (getCommit)
-						gitItem.CommitPropertiesInitialized = false;
-				}
-
-				if (semaphoreEntered)
-					gitPropertiesSemaphore.Release();
-			}
-		}
-
 		private async Task<ImageSource?> GetItemTypeGroupIcon(ListedItem item, BaseStorageFile? matchingStorageItem = null)
 		{
 			ImageSource? groupImage = null;
@@ -2199,13 +2059,11 @@ namespace Files.App.ViewModels
 					PageTypeUpdated?.Invoke(this, new PageTypeUpdatedEventArgs()
 					{
 						IsTypeCloudDrive = syncStatus != CloudDriveSyncStatus.NotSynced && syncStatus != CloudDriveSyncStatus.Unknown,
-						IsTypeGitRepository = IsValidGitDirectory
+						IsTypeGitRepository = false
 					});
 
 					if (!HasNoWatcher)
 						WatchForDirectoryChanges(path, syncStatus);
-					if (IsValidGitDirectory)
-						WatchForGitChanges();
 					break;
 
 				// Enumerated with StorageFolder
@@ -2242,13 +2100,12 @@ namespace Files.App.ViewModels
 
 		public void CloseWatcher()
 		{
-			App.Logger.LogInformation($"CloseWatcher: aProcessQueueAction={aProcessQueueAction?.Status.ToString()}, gitProcessQueueAction={gitProcessQueueAction?.Status.ToString()}");
+			App.Logger.LogInformation($"CloseWatcher: aProcessQueueAction={aProcessQueueAction?.Status.ToString()}");
 
 			watcher?.Dispose();
 			watcher = null;
 
 			aProcessQueueAction = null;
-			gitProcessQueueAction = null;
 			watcherCTS?.Cancel();
 			watcherCTS = new CancellationTokenSource();
 		}
@@ -2912,129 +2769,6 @@ namespace Files.App.ViewModels
 			});
 		}
 
-		private void WatchForGitChanges()
-		{
-			// Enumeration is fire-and-forget; don't set up a watcher on a disposed view model.
-			if (isDisposed)
-				return;
-
-			var hWatchDir = Win32PInvoke.CreateFileFromApp(
-				GitDirectory!,
-				1,
-				1 | 2 | 4,
-				IntPtr.Zero,
-				3,
-				(uint)Win32PInvoke.File_Attributes.BackupSemantics | (uint)Win32PInvoke.File_Attributes.Overlapped,
-				IntPtr.Zero);
-
-			if (hWatchDir.ToInt64() == -1)
-				return;
-
-			gitProcessQueueAction ??= Task.Run(() => ProcessGitChangesQueueAsync(watcherCTS.Token));
-
-			var gitWatcherAction = Windows.System.Threading.ThreadPool.RunAsync((x) =>
-			{
-				var buff = new byte[4096];
-				var rand = Guid.NewGuid();
-				var notifyFilters = FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_CREATION;
-
-				var overlapped = new NativeOverlapped();
-				using var eventHandle = PInvoke.CreateEvent(null, false, false, null);
-				overlapped.EventHandle = eventHandle.DangerousGetHandle();
-				const uint INFINITE = 0xFFFFFFFF;
-
-				while (x.Status != AsyncStatus.Canceled)
-				{
-					unsafe
-					{
-						fixed (byte* pBuff = buff)
-						{
-							ref var notifyInformation = ref Unsafe.As<byte, FILE_NOTIFY_INFORMATION>(ref buff[0]);
-							if (x.Status == AsyncStatus.Canceled)
-								break;
-
-							PInvoke.ReadDirectoryChanges(
-								new Windows.Win32.Foundation.HANDLE(hWatchDir),
-								pBuff,
-								4096,
-								true,
-								(Windows.Win32.Storage.FileSystem.FILE_NOTIFY_CHANGE)notifyFilters,
-								null,
-								&overlapped,
-								null);
-
-							if (x.Status == AsyncStatus.Canceled)
-								break;
-
-							var rc = WaitForSingleObjectEx(overlapped.EventHandle, INFINITE, true);
-
-							uint offset = 0;
-							ref var notifyInfo = ref Unsafe.As<byte, FILE_NOTIFY_INFORMATION>(ref buff[offset]);
-							if (x.Status == AsyncStatus.Canceled)
-								break;
-
-							do
-							{
-								notifyInfo = ref Unsafe.As<byte, FILE_NOTIFY_INFORMATION>(ref buff[offset]);
-
-								uint action = notifyInfo.Action;
-
-								gitChangesQueue.Enqueue(action);
-
-								offset += notifyInfo.NextEntryOffset;
-							}
-							while (notifyInfo.NextEntryOffset != 0 && x.Status != AsyncStatus.Canceled);
-
-							gitChangedEvent.Set();
-						}
-					}
-				}
-
-				gitChangesQueue.Clear();
-			});
-
-			watcherCTS.Token.Register(() =>
-			{
-				if (gitWatcherAction is not null)
-				{
-					gitWatcherAction?.Cancel();
-
-					// Prevent duplicate execution of this block
-					gitWatcherAction = null;
-				}
-
-				CancelIoEx(hWatchDir, IntPtr.Zero);
-				CloseHandle(hWatchDir);
-			});
-		}
-
-		private async Task ProcessGitChangesQueueAsync(CancellationToken cancellationToken)
-		{
-			const int DELAY = 200;
-			var sampler = new IntervalSampler(100);
-			int changes = 0;
-
-			try
-			{
-				while (!cancellationToken.IsCancellationRequested)
-				{
-					if (await gitChangedEvent.WaitAsync(DELAY, cancellationToken))
-					{
-						gitChangedEvent.Reset();
-						while (gitChangesQueue.TryDequeue(out var _))
-							++changes;
-
-						if (changes != 0 && sampler.CheckNow())
-						{
-							await dispatcherQueue.EnqueueOrInvokeAsync(() => GitDirectoryUpdated?.Invoke(null, null!));
-							changes = 0;
-						}
-					}
-				}
-			}
-			catch { }
-		}
-
 		private async Task ProcessOperationQueueAsync(CancellationToken cancellationToken, bool hasSyncStatus)
 		{
 			const uint FILE_ACTION_ADDED = 0x00000001;
@@ -3239,9 +2973,9 @@ namespace Files.App.ViewModels
 
 			// FILE_ATTRIBUTE_DIRECTORY
 			if ((findData.dwFileAttributes & 0x10) > 0)
-				listedItem = await Win32StorageEnumerator.GetFolder(findData, parentPath, IsValidGitDirectory, addFilesCTS.Token);
+				listedItem = await Win32StorageEnumerator.GetFolder(findData, parentPath, addFilesCTS.Token);
 			else
-				listedItem = await Win32StorageEnumerator.GetFile(findData, parentPath, IsValidGitDirectory, addFilesCTS.Token);
+				listedItem = await Win32StorageEnumerator.GetFile(findData, parentPath, addFilesCTS.Token);
 
 			if (listedItem is null)
 				return null;
@@ -3647,13 +3381,5 @@ namespace Files.App.ViewModels
 		/// This property may not be provided consistently if Status is not Complete
 		/// </summary>
 		public string? Path { get; set; }
-	}
-
-	public enum GitProperties
-	{
-		None,
-		Status,
-		Commit,
-		All,
 	}
 }

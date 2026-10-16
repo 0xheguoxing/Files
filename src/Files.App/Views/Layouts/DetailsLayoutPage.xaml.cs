@@ -193,7 +193,6 @@ namespace Files.App.Views.Layouts
 				ColumnsViewModel.GitLastCommitShaColumn.Update(FolderSettings.ColumnsViewModel.GitLastCommitShaColumn);
 			}
 
-			shellViewModel.EnabledGitProperties = GetEnabledGitProperties(ColumnsViewModel);
 
 			folderSettings.LayoutModeChangeRequested += FolderSettings_LayoutModeChangeRequested;
 			folderSettings.SortDirectionPreferenceUpdated += FolderSettings_SortDirectionPreferenceUpdated;
@@ -637,16 +636,6 @@ namespace Files.App.Views.Layouts
 					return Task.CompletedTask;
 			}));
 
-			if (shellViewModel.EnabledGitProperties is not GitProperties.None)
-			{
-				await Task.WhenAll(filesAndFolders.Select(item =>
-				{
-					if (item is IGitItem gitItem)
-						return shellViewModel.LoadGitPropertiesAsync(gitItem);
-
-					return Task.CompletedTask;
-				}));
-			}
 		}
 
 		[DynamicWindowsRuntimeCast(typeof(FrameworkElement))]
@@ -809,12 +798,6 @@ namespace Files.App.Views.Layouts
 			ColumnsViewModel.IconColumn.UserLength = Column2.Width;
 			ColumnsViewModel.NameColumn.UserLength = Column3.Width;
 
-			// Git
-			ColumnsViewModel.GitStatusColumn.UserLength = GitStatusColumnDefinition.Width;
-			ColumnsViewModel.GitLastCommitDateColumn.UserLength = GitLastCommitDateColumnDefinition.Width;
-			ColumnsViewModel.GitLastCommitMessageColumn.UserLength = GitLastCommitMessageColumnDefinition.Width;
-			ColumnsViewModel.GitCommitAuthorColumn.UserLength = GitCommitAuthorColumnDefinition.Width;
-			ColumnsViewModel.GitLastCommitShaColumn.UserLength = GitLastCommitShaColumnDefinition.Width;
 
 			ColumnsViewModel.TagColumn.UserLength = Column4.Width;
 			ColumnsViewModel.PathColumn.UserLength = Column5.Width;
@@ -857,7 +840,6 @@ namespace Files.App.Views.Layouts
 				?? throw new InvalidOperationException("The details layout does not have folder settings.");
 			folderSettings.ColumnsViewModel = ColumnsViewModel;
 			var shellViewModel = ParentShellPageInstance.GetRequiredShellViewModel();
-			shellViewModel.EnabledGitProperties = GetEnabledGitProperties(ColumnsViewModel);
 		}
 
 		private void GridSplitter_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
@@ -922,10 +904,10 @@ namespace Files.App.Views.Layouts
 			{
 				1 => 40, // Check all items columns
 				2 => FileList.Items.Cast<ListedItem>().Select(x => x.Name?.Length ?? 0).Max(), // file name column
-				4 => FileList.Items.Cast<ListedItem>().Select(x => (x as IGitItem)?.GitLastCommitDateHumanized?.Length ?? 0).Max(), // git
-				5 => FileList.Items.Cast<ListedItem>().Select(x => (x as IGitItem)?.GitLastCommitMessage?.Length ?? 0).Max(), // git
-				6 => FileList.Items.Cast<ListedItem>().Select(x => (x as IGitItem)?.GitLastCommitAuthor?.Length ?? 0).Max(), // git
-				7 => FileList.Items.Cast<ListedItem>().Select(x => (x as IGitItem)?.GitLastCommitSha?.Length ?? 0).Max(), // git
+				4 => FileList.Items.Cast<ListedItem>().Select(x => 0).Max(), // git
+				5 => FileList.Items.Cast<ListedItem>().Select(x => 0).Max(), // git
+				6 => FileList.Items.Cast<ListedItem>().Select(x => 0).Max(), // git
+				7 => FileList.Items.Cast<ListedItem>().Select(x => 0).Max(), // git
 				8 => FileList.Items.Cast<ListedItem>().Select(x => x.FileTagsUI?.Sum(x => x?.Name?.Length ?? 0) ?? 0).Max(), // file tag column
 				9 => FileList.Items.Cast<ListedItem>().Select(x => x.ItemPath?.Length ?? 0).Max(), // path column
 				10 => FileList.Items.Cast<ListedItem>().Select(x => (x as RecycleBinItem)?.ItemOriginalPath?.Length ?? 0).Max(), // original path column
@@ -1257,8 +1239,7 @@ namespace Files.App.Views.Layouts
 				// Handle visual states
 				// Show checkboxes when items are selected (as long as the setting is enabled)
 				// Show checkboxes when hovering of the thumbnail (regardless of the setting to hide them)
-				if (UserSettingsService.FoldersSettingsService.ShowCheckboxesWhenSelectingItems && control.IsSelected
-					|| isPointerOver)
+				if (UserSettingsService.FoldersSettingsService.ShowCheckboxesWhenSelectingItems && control.IsSelected)
 					VisualStateManager.GoToState(userControl, "ShowCheckbox", true);
 				else
 					VisualStateManager.GoToState(userControl, "HideCheckbox", true);
@@ -1318,20 +1299,5 @@ namespace Files.App.Views.Layouts
 			e.Handled = true;
 		}
 
-		private static GitProperties GetEnabledGitProperties(ColumnsViewModel columnsViewModel)
-		{
-			var enableStatus = !columnsViewModel.GitStatusColumn.IsHidden && !columnsViewModel.GitStatusColumn.UserCollapsed;
-			var enableCommit = !columnsViewModel.GitLastCommitDateColumn.IsHidden && !columnsViewModel.GitLastCommitDateColumn.UserCollapsed
-				|| !columnsViewModel.GitLastCommitMessageColumn.IsHidden && !columnsViewModel.GitLastCommitMessageColumn.UserCollapsed
-				|| !columnsViewModel.GitCommitAuthorColumn.IsHidden && !columnsViewModel.GitCommitAuthorColumn.UserCollapsed
-				|| !columnsViewModel.GitLastCommitShaColumn.IsHidden && !columnsViewModel.GitLastCommitShaColumn.UserCollapsed;
-			return (enableStatus, enableCommit) switch
-			{
-				(true, true) => GitProperties.All,
-				(true, false) => GitProperties.Status,
-				(false, true) => GitProperties.Commit,
-				(false, false) => GitProperties.None
-			};
-		}
 	}
 }

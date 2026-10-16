@@ -62,7 +62,6 @@ namespace Files.App.Views
 			await shellViewModel.SetWorkingDirectoryAsync("Settings");
 			shellViewModel.CheckForBackgroundImage();
 
-			AppInstance.SlimContentPage?.StatusBarViewModel.UpdateGitInfo(false, string.Empty, null);
 			AppInstance.SlimContentPage?.InfoPaneViewModel.UpdateSelectedItemPreviewAsync();
 
 			AppInstance.ToolbarViewModel.PathComponents.Clear();
@@ -136,7 +135,6 @@ namespace Files.App.Views
 				SettingsPageKind.FoldersPage => typeof(FoldersPage),
 				SettingsPageKind.ActionsPage => typeof(ActionsPage),
 				SettingsPageKind.TagsPage => typeof(TagsPage),
-				SettingsPageKind.DevToolsPage => typeof(DevToolsPage),
 				SettingsPageKind.AdvancedPage => typeof(AdvancedPage),
 				SettingsPageKind.AboutPage => typeof(AboutPage),
 				_ => typeof(GeneralPage),

@@ -17,7 +17,7 @@
 
 	<CornerRadius x:Key="BreadcrumbBarItemCornerRadius">2,2,2,2</CornerRadius>
 	<CornerRadius x:Key="BreadcrumbBarChevronCornerRaduis">2,2,2,2</CornerRadius>
-	<CornerRadius x:Key="BreadcrumbBarRootItemCornerRadius">16,2,2,16</CornerRadius>
+	<CornerRadius x:Key="BreadcrumbBarRootItemCornerRadius">4,4,4,4</CornerRadius>
 
 	<Style BasedOn="{StaticResource DefaultBreadcrumbBarStyle}" TargetType="local:BreadcrumbBar" />
 	<Style BasedOn="{StaticResource DefaultBreadcrumbBarItemStyle}" TargetType="local:BreadcrumbBarItem" />

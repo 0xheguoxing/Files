@@ -10,7 +10,6 @@ namespace Files.App.Utils
 {
 	public interface IListedItem
 	{
-		GitItem? AsGitItem { get; }
 		RecycleBinItem? AsRecycleBinItem { get; }
 		bool ContainsFilesOrFolders { get; set; }
 		string? ContextualProperty { get; set; }
@@ -38,7 +37,6 @@ namespace Files.App.Utils
 		bool IsExecutable { get; }
 		bool IsFolder { get; }
 		bool IsFtpItem { get; }
-		bool IsGitItem { get; }
 		bool IsHiddenItem { get; set; }
 		bool IsItemPinnedToStart { get; }
 		bool IsLibrary { get; }

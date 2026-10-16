@@ -148,12 +148,6 @@ namespace Files.App.Views.Layouts
 			selectedItem.ItemPropertiesInitialized = false;
 
 			await shellViewModel.LoadExtendedItemPropertiesAsync(selectedItem);
-
-			if (shellViewModel.EnabledGitProperties is not GitProperties.None &&
-				selectedItem is IGitItem gitItem)
-			{
-				await shellViewModel.LoadGitPropertiesAsync(gitItem);
-			}
 		}
 
 		protected virtual async Task ReloadSelectedItemsIconAsync()
@@ -170,17 +164,6 @@ namespace Files.App.Views.Layouts
 			{
 				selectedItem.ItemPropertiesInitialized = false;
 				await shellViewModel.LoadExtendedItemPropertiesAsync(selectedItem);
-			}
-
-			if (shellViewModel.EnabledGitProperties is not GitProperties.None)
-			{
-				await Task.WhenAll(selectedItems.Select(item =>
-				{
-					if (item is IGitItem gitItem)
-						return shellViewModel.LoadGitPropertiesAsync(gitItem);
-
-					return Task.CompletedTask;
-				}));
 			}
 		}
 

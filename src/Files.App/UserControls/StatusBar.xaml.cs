@@ -24,8 +24,6 @@ namespace Files.App.UserControls
 		private double _lastActionsNaturalWidth;
 		private double _lastStatusButtonWidth = 90d;
 		private double _lastStatusIconWidth = 32d;
-		private double _lastGitButtonWidth = 80d;
-		private double _lastGitIconWidth = 32d;
 		private double _lastEncodingWidth = 90d;
 		private double _lastEncodingIconWidth = 32d;
 
@@ -70,14 +68,11 @@ namespace Files.App.UserControls
 		public Visibility ToVisibility(bool value)
 			=> value ? Visibility.Visible : Visibility.Collapsed;
 
-		public Visibility GetOpenRepoInIDEItemVisibility(bool showOpenInIDEButton, string? gitBranchDisplayName)
-			=> ToVisibility(showOpenInIDEButton && gitBranchDisplayName is not null);
+		public Visibility GetActionsAreaVisibility(bool showOpenInIDEButton)
+			=> ToVisibility(showOpenInIDEButton);
 
-		public Visibility GetActionsAreaVisibility(bool showOpenInIDEButton, string? gitBranchDisplayName)
-			=> ToVisibility(showOpenInIDEButton || gitBranchDisplayName is not null);
-
-		public Visibility GetEncodingDividerVisibility(bool isZipEncodingSelectorVisible, bool showOpenInIDEButton, string? gitBranchDisplayName)
-			=> ToVisibility(isZipEncodingSelectorVisible && (showOpenInIDEButton || gitBranchDisplayName is not null));
+		public Visibility GetEncodingDividerVisibility(bool isZipEncodingSelectorVisible, bool showOpenInIDEButton)
+			=> ToVisibility(isZipEncodingSelectorVisible && showOpenInIDEButton);
 
 		private void Content_SizeChanged(object sender, SizeChangedEventArgs e)
 			=> UpdateResponsiveState();
@@ -147,13 +142,6 @@ namespace Files.App.UserControls
 				else
 					_lastStatusIconWidth = StatusButton.DesiredSize.Width;
 			}
-			if (GitOverflowButton.Visibility == Visibility.Visible && GitOverflowButton.DesiredSize.Width > 0)
-			{
-				if (GitOverflowButtonLabel.Visibility == Visibility.Visible)
-					_lastGitButtonWidth = GitOverflowButton.DesiredSize.Width;
-				else
-					_lastGitIconWidth = GitOverflowButton.DesiredSize.Width;
-			}
 			if (ZipEncodingSelector.Visibility == Visibility.Visible && ZipEncodingSelector.DesiredSize.Width > 0)
 			{
 				if (ZipEncodingLabel.Visibility == Visibility.Visible)
@@ -162,14 +150,12 @@ namespace Files.App.UserControls
 					_lastEncodingIconWidth = ZipEncodingSelector.DesiredSize.Width;
 			}
 
-			var hasActions = GetActionsAreaVisibility(StatusBarViewModel?.ShowOpenInIDEButton ?? false, StatusBarViewModel?.GitBranchDisplayName) == Visibility.Visible;
+			var hasActions = GetActionsAreaVisibility(StatusBarViewModel?.ShowOpenInIDEButton ?? false) == Visibility.Visible;
 			var hasEncoding = EncodingArea.Visibility == Visibility.Visible;
 			var infoWidth = ShowInfoText ? _lastInfoNaturalWidth : 0d;
 			var statusButtonWidth = ShowInfoText ? _lastStatusButtonWidth : 0d;
 			var statusIconWidth = ShowInfoText ? _lastStatusIconWidth : 0d;
 			var actionsWidth = hasActions ? _lastActionsNaturalWidth : 0d;
-			var gitButtonWidth = hasActions ? _lastGitButtonWidth : 0d;
-			var gitIconWidth = hasActions ? _lastGitIconWidth : 0d;
 			var encodingWidth = hasEncoding ? _lastEncodingWidth : 0d;
 			var encodingIconWidth = hasEncoding ? _lastEncodingIconWidth : 0d;
 
@@ -178,9 +164,9 @@ namespace Files.App.UserControls
 			[
 				infoWidth + SectionGapWidth + actionsWidth + encodingWidth,
 				infoWidth + SectionGapWidth + actionsWidth + encodingIconWidth,
-				infoWidth + SectionGapWidth + gitButtonWidth + encodingIconWidth,
-				statusButtonWidth + SectionGapWidth + gitButtonWidth + encodingIconWidth,
-				statusIconWidth + SectionGapWidth + gitIconWidth + encodingIconWidth,
+				infoWidth + SectionGapWidth + encodingIconWidth,
+				statusButtonWidth + SectionGapWidth + encodingIconWidth,
+				statusIconWidth + SectionGapWidth + encodingIconWidth,
 				0d,
 			];
 
@@ -190,34 +176,6 @@ namespace Files.App.UserControls
 
 			_currentStateRank = targetRank;
 			VisualStateManager.GoToState(this, _stateNames[targetRank], false);
-		}
-
-		private void GitBranchCompact_Click(object sender, RoutedEventArgs e)
-		{
-			ActionsOverflowFlyout.Hide();
-
-			// ShowAt throws ArgumentException when a queued remeasure expanded the bar and
-			// removed the anchor from the tree between the click and this handler
-			SafetyExtensions.IgnoreExceptions(() => BranchesFlyout.ShowAt(GitOverflowButton), App.Logger);
-		}
-
-		private void GitNetworkActionsCompact_Click(object sender, RoutedEventArgs e)
-		{
-			ActionsOverflowFlyout.Hide();
-
-			// Same anchor-removed ArgumentException risk as in GitBranchCompact_Click
-			SafetyExtensions.IgnoreExceptions(() => GitNetworkActions?.Flyout?.ShowAt(GitOverflowButton), App.Logger);
-		}
-
-		private async void BranchesFlyout_Opening(object _, object e)
-		{
-			if (StatusBarViewModel is null)
-				return;
-
-			StatusBarViewModel.IsBranchesFlyoutExpanded = true;
-			StatusBarViewModel.ShowLocals = true;
-			await StatusBarViewModel.LoadBranches();
-			StatusBarViewModel.SelectedBranchIndex = StatusBarViewModel.ACTIVE_BRANCH_INDEX;
 		}
 
 		private async void ZipEncodingFlyout_Opening(object _, object e)
@@ -230,32 +188,9 @@ namespace Files.App.UserControls
 				ZipEncodingList.SelectedItem = StatusBarViewModel.SelectedZipEncoding;
 		}
 
-		private void BranchesList_ItemClick(object sender, ItemClickEventArgs e)
-		{
-			BranchesFlyout.Hide();
-		}
-
 		private void ZipEncodingList_ItemClick(object sender, ItemClickEventArgs e)
 		{
 			ZipEncodingFlyout.Hide();
-		}
-
-		private void BranchesFlyout_Closing(object _, object e)
-		{
-			if (StatusBarViewModel is null)
-				return;
-
-			StatusBarViewModel.IsBranchesFlyoutExpanded = false;
-		}
-
-		[DynamicWindowsRuntimeCast(typeof(Button))]
-		private async void DeleteBranch_Click(object sender, RoutedEventArgs e)
-		{
-			if (StatusBarViewModel is null)
-				return;
-
-			BranchesFlyout.Hide();
-			await StatusBarViewModel.ExecuteDeleteBranch(((BranchItem)((Button)sender).DataContext).Name);
 		}
 	}
 }

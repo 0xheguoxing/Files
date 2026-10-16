@@ -151,7 +151,8 @@ namespace Files.App.Services.Settings
 
 		public bool ShowCheckboxesWhenSelectingItems
 		{
-			get => Get(true);
+			// Checkboxes are intentionally disabled; selection visuals stay.
+			get => Get(false);
 			set => Set(value);
 		}
 

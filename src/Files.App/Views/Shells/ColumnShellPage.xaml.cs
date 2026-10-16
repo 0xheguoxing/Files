@@ -91,7 +91,6 @@ namespace Files.App.Views.Shells
 			ShellViewModel.DirectoryInfoUpdated += FilesystemViewModel_DirectoryInfoUpdated;
 			ShellViewModel.PageTypeUpdated += FilesystemViewModel_PageTypeUpdated;
 			ShellViewModel.OnSelectionRequestedEvent += FilesystemViewModel_OnSelectionRequestedEvent;
-			ShellViewModel.GitDirectoryUpdated += FilesystemViewModel_GitDirectoryUpdated;
 
 			PaneHolder = this.FindAscendant<ColumnsLayoutPage>()?.ParentShellPageInstance?.PaneHolder;
 
@@ -110,7 +109,6 @@ namespace Files.App.Views.Shells
 				ShellViewModel.DirectoryInfoUpdated -= FilesystemViewModel_DirectoryInfoUpdated;
 				ShellViewModel.PageTypeUpdated -= FilesystemViewModel_PageTypeUpdated;
 				ShellViewModel.OnSelectionRequestedEvent -= FilesystemViewModel_OnSelectionRequestedEvent;
-				ShellViewModel.GitDirectoryUpdated -= FilesystemViewModel_GitDirectoryUpdated;
 			}
 		}
 

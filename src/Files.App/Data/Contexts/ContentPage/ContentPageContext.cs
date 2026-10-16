@@ -46,17 +46,12 @@ namespace Files.App.Data.Contexts
 
 		public bool IsMultiPaneActive => ShellPage is not null && ShellPage.PaneHolder is not null && ShellPage.PaneHolder.IsMultiPaneActive;
 
-		public bool IsGitRepository => ShellPage is not null && ShellPage.InstanceViewModel.IsGitRepository;
-
-		public bool CanExecuteGitAction => IsGitRepository && !GitHelpers.IsExecutingGitAction;
-
 		public string? SolutionFilePath => ShellPage?.ShellViewModel?.SolutionFilePath;
 
 		public ContentPageContext()
 		{
 			context.ActivePaneChanging += Context_Changing;
 			context.ActivePaneChanged += Context_Changed;
-			GitHelpers.IsExecutingGitActionChanged += GitHelpers_IsExecutingGitActionChanged;
 
 			Update();
 		}
@@ -74,11 +69,6 @@ namespace Files.App.Data.Contexts
 				// Expected during app/pane/tab teardown when XAML bindings are destroyed
 				App.Logger.LogInformation($"ContentPageContext.OnPropertyChanged: Suppressed COMException for property '{e.PropertyName}': {ex.HResult}");
 			}
-		}
-
-		private void GitHelpers_IsExecutingGitActionChanged(object? sender, PropertyChangedEventArgs e)
-		{
-			OnPropertyChanged(nameof(CanExecuteGitAction));
 		}
 
 		private void Context_Changing(object? sender, EventArgs e)
@@ -165,10 +155,6 @@ namespace Files.App.Data.Contexts
 				case nameof(CurrentInstanceViewModel.IsPageTypeSettings):
 					UpdatePageType();
 					break;
-				case nameof(CurrentInstanceViewModel.IsGitRepository):
-					OnPropertyChanged(nameof(IsGitRepository));
-					OnPropertyChanged(nameof(CanExecuteGitAction));
-					break;
 			}
 		}
 
@@ -215,8 +201,6 @@ namespace Files.App.Data.Contexts
 			OnPropertyChanged(nameof(CanCreateItem));
 			OnPropertyChanged(nameof(IsMultiPaneAvailable));
 			OnPropertyChanged(nameof(IsMultiPaneActive));
-			OnPropertyChanged(nameof(IsGitRepository));
-			OnPropertyChanged(nameof(CanExecuteGitAction));
 		}
 
 		private void UpdatePageType()

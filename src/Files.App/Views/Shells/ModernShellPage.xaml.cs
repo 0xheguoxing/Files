@@ -44,7 +44,6 @@ namespace Files.App.Views.Shells
 			ShellViewModel.DirectoryInfoUpdated += FilesystemViewModel_DirectoryInfoUpdated;
 			ShellViewModel.PageTypeUpdated += FilesystemViewModel_PageTypeUpdated;
 			ShellViewModel.OnSelectionRequestedEvent += FilesystemViewModel_OnSelectionRequestedEvent;
-			ShellViewModel.GitDirectoryUpdated += FilesystemViewModel_GitDirectoryUpdated;
 			ShellViewModel.FocusFilterHeader += ShellViewModel_FocusFilterHeader;
 
 			ToolbarViewModel.PathControlDisplayText = Strings.Home.GetLocalizedResource();

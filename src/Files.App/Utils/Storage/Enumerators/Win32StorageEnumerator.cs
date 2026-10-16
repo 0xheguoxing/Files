@@ -42,7 +42,6 @@ namespace Files.App.Utils.Storage
 			bool showDotFiles = userSettingsService.FoldersSettingsService.ShowDotFiles;
 			bool areAlternateStreamsVisible = userSettingsService.FoldersSettingsService.AreAlternateStreamsVisible;
 
-			var isGitRepo = GitHelpers.IsRepositoryEx(path, out var repoPath) && !string.IsNullOrEmpty(await GitHelpers.GetRepositoryHeadName(repoPath));
 			var rawHandle = hFile.DangerousGetHandle();
 
 			try
@@ -59,7 +58,7 @@ namespace Files.App.Utils.Storage
 					{
 						if (((FileAttributes)findData.dwFileAttributes & FileAttributes.Directory) != FileAttributes.Directory)
 						{
-							var file = await GetFile(findData, path, isGitRepo, cancellationToken);
+							var file = await GetFile(findData, path, cancellationToken);
 							if (file is not null)
 							{
 								var filePath = file.ItemPath!;
@@ -75,7 +74,7 @@ namespace Files.App.Utils.Storage
 						{
 							if (findData.cFileName != "." && findData.cFileName != "..")
 							{
-								var folder = await GetFolder(findData, path, isGitRepo, cancellationToken);
+								var folder = await GetFolder(findData, path, cancellationToken);
 								if (folder is not null)
 								{
 									var folderPath = folder.ItemPath!;
@@ -166,7 +165,6 @@ namespace Files.App.Utils.Storage
 		public static async Task<ListedItem?> GetFolder(
 			Win32PInvoke.WIN32_FIND_DATA findData,
 			string pathRoot,
-			bool isGitRepo,
 			CancellationToken cancellationToken
 		)
 		{
@@ -210,25 +208,6 @@ namespace Files.App.Utils.Storage
 			if (isHidden)
 				opacity = Constants.UI.DimItemOpacity;
 
-			if (isGitRepo)
-			{
-				return new GitItem()
-				{
-					PrimaryItemAttribute = StorageItemTypes.Folder,
-					ItemNameRaw = itemName,
-					ItemDateModifiedReal = itemModifiedDate,
-					ItemDateCreatedReal = itemCreatedDate,
-					ItemType = folderTypeTextLocalized,
-					FileImage = null,
-					IsHiddenItem = isHidden,
-					Opacity = opacity,
-					LoadFileIcon = false,
-					ItemPath = itemPath,
-					FileSize = null,
-					FileSizeBytes = 0,
-				};
-			}
-			else
 			{
 				return new ListedItem(null)
 				{
@@ -251,7 +230,6 @@ namespace Files.App.Utils.Storage
 		public static async Task<ListedItem?> GetFile(
 			Win32PInvoke.WIN32_FIND_DATA findData,
 			string pathRoot,
-			bool isGitRepo,
 			CancellationToken cancellationToken
 		)
 		{
@@ -307,31 +285,9 @@ namespace Files.App.Utils.Storage
 
 			if (isSymlink)
 			{
-				var targetPath = Win32Helper.ParseSymLink(itemPath);
-				if (isGitRepo)
 				{
-					return new GitShortcutItem()
-					{
-						PrimaryItemAttribute = StorageItemTypes.File,
-						FileExtension = itemFileExtension,
-						IsHiddenItem = isHidden,
-						Opacity = opacity,
-						FileImage = null,
-						LoadFileIcon = itemThumbnailImgVis,
-						ItemNameRaw = itemName,
-						ItemDateModifiedReal = itemModifiedDate,
-						ItemDateAccessedReal = itemLastAccessDate,
-						ItemDateCreatedReal = itemCreatedDate,
-						ItemType = Strings.Shortcut.GetLocalizedResource(),
-						ItemPath = itemPath,
-						FileSize = itemSize,
-						FileSizeBytes = itemSizeBytes,
-						TargetPath = targetPath,
-						IsSymLink = true,
-					};
-				}
-				else
-				{
+var targetPath = Win32Helper.ParseSymLink(itemPath);
+
 					return new ShortcutItem(null)
 					{
 						PrimaryItemAttribute = StorageItemTypes.File,
@@ -363,33 +319,6 @@ namespace Files.App.Utils.Storage
 				if (shInfo is null)
 					return null;
 
-				if (isGitRepo)
-				{
-					return new GitShortcutItem()
-					{
-						PrimaryItemAttribute = shInfo.IsFolder ? StorageItemTypes.Folder : StorageItemTypes.File,
-						FileExtension = itemFileExtension,
-						IsHiddenItem = isHidden,
-						Opacity = opacity,
-						FileImage = null,
-						LoadFileIcon = !shInfo.IsFolder && itemThumbnailImgVis,
-						ItemNameRaw = itemName,
-						ItemDateModifiedReal = itemModifiedDate,
-						ItemDateAccessedReal = itemLastAccessDate,
-						ItemDateCreatedReal = itemCreatedDate,
-						ItemType = isUrl ? Strings.ShortcutWebLinkFileType.GetLocalizedResource() : Strings.Shortcut.GetLocalizedResource(),
-						ItemPath = itemPath,
-						FileSize = itemSize,
-						FileSizeBytes = itemSizeBytes,
-						TargetPath = shInfo.TargetPath,
-						Arguments = shInfo.Arguments,
-						WorkingDirectory = shInfo.WorkingDirectory,
-						RunAsAdmin = shInfo.RunAsAdmin,
-						ShowWindowCommand = shInfo.ShowWindowCommand,
-						IsUrl = isUrl,
-					};
-				}
-				else
 				{
 					return new ShortcutItem(null)
 					{
@@ -432,26 +361,6 @@ namespace Files.App.Utils.Storage
 					return new ZipItem(null)
 					{
 						PrimaryItemAttribute = StorageItemTypes.Folder, // Treat zip files as folders
-						FileExtension = itemFileExtension,
-						FileImage = null,
-						LoadFileIcon = itemThumbnailImgVis,
-						ItemNameRaw = itemName,
-						IsHiddenItem = isHidden,
-						Opacity = opacity,
-						ItemDateModifiedReal = itemModifiedDate,
-						ItemDateAccessedReal = itemLastAccessDate,
-						ItemDateCreatedReal = itemCreatedDate,
-						ItemType = itemType,
-						ItemPath = itemPath,
-						FileSize = itemSize,
-						FileSizeBytes = itemSizeBytes
-					};
-				}
-				else if (isGitRepo)
-				{
-					return new GitItem()
-					{
-						PrimaryItemAttribute = StorageItemTypes.File,
 						FileExtension = itemFileExtension,
 						FileImage = null,
 						LoadFileIcon = itemThumbnailImgVis,

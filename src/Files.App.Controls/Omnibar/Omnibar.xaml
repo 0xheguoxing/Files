@@ -16,8 +16,8 @@
 	<Thickness x:Key="OmnibarBorderMarginUnfocused">-1</Thickness>
 	<Thickness x:Key="OmnibarModeSeparatorPadding">4,0,4,0</Thickness>
 
-	<CornerRadius x:Key="OmnibarDefaultCornerRadius">19</CornerRadius>
-	<CornerRadius x:Key="OmnibarModeDefaultCornerRadius">17</CornerRadius>
+	<CornerRadius x:Key="OmnibarDefaultCornerRadius">4</CornerRadius>
+	<CornerRadius x:Key="OmnibarModeDefaultCornerRadius">4</CornerRadius>
 
 	<Style BasedOn="{StaticResource DefaultOmnibarStyle}" TargetType="local:Omnibar" />
 	<Style BasedOn="{StaticResource DefaultOmnibarModeStyle}" TargetType="local:OmnibarMode" />

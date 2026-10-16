@@ -521,9 +521,6 @@ namespace Files.App.Views.Layouts
 			ParentShellPageInstance = parentShellPage;
 			var folderSettings = parentShellPage.InstanceViewModel.FolderSettings;
 
-			// Git properties are not loaded by default
-			shellViewModel.EnabledGitProperties = GitProperties.None;
-
 			InitializeCommandsViewModel();
 
 			IsItemSelected = false;
@@ -1312,11 +1309,9 @@ namespace Files.App.Views.Layouts
 				_ = Parallel.ForEachAsync(itemsToLoad, (item, _) => new ValueTask(LoadItemExtendedPropertiesAsync(item, shellViewModel)));
 		}
 
-		private static async Task LoadItemExtendedPropertiesAsync(ListedItem item, ShellViewModel shellViewModel)
+		private static Task LoadItemExtendedPropertiesAsync(ListedItem item, ShellViewModel shellViewModel)
 		{
-			await shellViewModel.LoadExtendedItemPropertiesAsync(item);
-			if (shellViewModel.EnabledGitProperties is not GitProperties.None && item is IGitItem gitItem)
-				await shellViewModel.LoadGitPropertiesAsync(gitItem);
+			return shellViewModel.LoadExtendedItemPropertiesAsync(item);
 		}
 
 		// Rapid successive gestures raise a final ViewChanged between steps; debouncing keeps loads parked through the whole burst

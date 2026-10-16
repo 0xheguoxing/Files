@@ -78,14 +78,6 @@
 				<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=SettingsFilesAndFoldersShowThumbnails}" IsOn="{x:Bind ViewModel.ShowThumbnails, Mode=TwoWay}" />
 			</wctcontrols:SettingsCard>
 
-			<!--  Show Checkboxes When Selecting Items  -->
-			<wctcontrols:SettingsCard Header="{helpers:ResourceString Name=ShowCheckboxesWhenSelectingItems}">
-				<wctcontrols:SettingsCard.HeaderIcon>
-					<FontIcon Glyph="&#xE73A;" />
-				</wctcontrols:SettingsCard.HeaderIcon>
-				<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=ShowCheckboxesWhenSelectingItems}" IsOn="{x:Bind ViewModel.ShowCheckboxesWhenSelectingItems, Mode=TwoWay}" />
-			</wctcontrols:SettingsCard>
-
 			<!--  Behaviors  -->
 			<TextBlock
 				Padding="0,16,0,4"

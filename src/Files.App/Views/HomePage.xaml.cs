@@ -66,7 +66,6 @@ namespace Files.App.Views
 			await shellViewModel.SetWorkingDirectoryAsync("Home");
 			shellViewModel.CheckForBackgroundImage();
 
-			AppInstance.SlimContentPage?.StatusBarViewModel.UpdateGitInfo(false, string.Empty, null);
 
 			AppInstance.ToolbarViewModel.PathComponents.Clear();
 

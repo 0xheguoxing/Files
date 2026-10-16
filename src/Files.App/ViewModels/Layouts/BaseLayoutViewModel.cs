@@ -134,18 +134,6 @@ namespace Files.App.ViewModels.Layouts
 				var workingDirectory = workingDirectoryPath.TrimPath()!;
 				var folderName = Path.IsPathRooted(workingDirectory) && Path.GetPathRoot(workingDirectory) == workingDirectory ? Path.GetPathRoot(workingDirectory) : Path.GetFileName(workingDirectory);
 
-				if (e.DataView.Contains(StandardDataFormats.Uri) && await TryGetUriAsync(e.DataView) is { } uri)
-				{
-					if (GitHelpers.IsValidRepoUrl(uri.ToString()))
-					{
-						e.DragUIOverride.IsCaptionVisible = true;
-						e.DragUIOverride.Caption = string.Format(Strings.CloneToFolderCaptionText.GetLocalizedResource(), folderName);
-						e.AcceptedOperation = DataPackageOperation.Copy;
-						deferral.Complete();
-						return;
-					}
-				}
-
 				var draggedItems = await FilesystemHelpers.GetDraggedStorageItems(e.DataView);
 
 				// As long as one file doesn't already belong to this folder, and this folder isn't one of the dragged items or inside one
@@ -235,14 +223,6 @@ namespace Files.App.ViewModels.Layouts
 			}
 
 			e.Handled = true;
-			if (e.DataView.Contains(StandardDataFormats.Uri) && await TryGetUriAsync(e.DataView) is { } uri)
-			{
-				if (GitHelpers.IsValidRepoUrl(uri.ToString()))
-				{
-					Commands.GitClone.Execute(uri.ToString());
-					return;
-				}
-			}
 
 			// Check if ShellViewModel is initialized to prevent race condition
 			if (_associatedInstance.ShellViewModel is null)
