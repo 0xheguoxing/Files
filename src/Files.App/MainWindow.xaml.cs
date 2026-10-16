@@ -430,6 +430,20 @@ namespace Files.App
 					case ParsedCommandType.OutputPath:
 						App.OutputPath = command.Payload;
 						break;
+
+					case ParsedCommandType.Properties:
+						// A properties launch needs a hosting shell page. On cold start the
+						// shell is not up yet, so bring up the main page first.
+						if (Ioc.Default.GetService<IContentPageContext>()?.ShellPage is null && rootFrame.Content is not MainPage)
+							await PerformNavigationAsync(null);
+
+						var propertiesItem = await FilesystemTasks.Wrap(() => StorageHelpers.ToStorageItem<IStorageItem>(command.Payload));
+						if (propertiesItem?.Result is { } itemToInspect &&
+							Ioc.Default.GetService<IContentPageContext>()?.ShellPage is { } propertiesHost)
+						{
+							FilePropertiesHelpers.OpenPropertiesWindow(itemToInspect, propertiesHost);
+						}
+						break;
 				}
 			}
 		}

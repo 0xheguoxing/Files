@@ -67,6 +67,10 @@ namespace Files.App.Utils.CommandLine
 						command.Type = ParsedCommandType.TagFiles;
 						break;
 
+					case string s when "Properties".Equals(s, StringComparison.OrdinalIgnoreCase):
+						command.Type = ParsedCommandType.Properties;
+						break;
+
 					default: //case "Cmdless":
 						try
 						{

@@ -41,6 +41,11 @@ namespace Files.App.Data.Enums
 		/// <summary>
 		/// Tag files command type
 		/// </summary>
-		TagFiles
+		TagFiles,
+
+		/// <summary>
+		/// Open the properties window for a path
+		/// </summary>
+		Properties
 	}
 }
