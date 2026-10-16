@@ -409,3 +409,7 @@ FodyWeavers.xsd
 *.sln.iml
 .idea/
 src/Files.App/Assets/FilesOpenDialog/Files.App.Launcher.exe.sha256
+
+# 本地工具产物(HTML 说明页、Agent 会话状态)
+.answer-me-html/
+.pi/
