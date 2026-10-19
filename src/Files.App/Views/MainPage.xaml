@@ -298,14 +298,9 @@
 				</StackPanel>
 			</controls:SidebarView.SidebarContent>
 
-			<!--  Footer  -->
-			<controls:SidebarView.Footer>
-				<StackPanel Padding="4,2,4,2" Spacing="2">
-					<Border
-						Height="1"
-						HorizontalAlignment="Stretch"
-						BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
-						BorderThickness="1" />
+			<!--  Header  -->
+			<controls:SidebarView.Header>
+				<StackPanel Padding="4,6,4,2" Spacing="2">
 					<controls:SidebarItem
 						x:Name="SettingsButton"
 						AccessKey="I"
@@ -334,7 +329,7 @@
 						</controls:SidebarItem.Icon>
 					</controls:SidebarItem>
 				</StackPanel>
-			</controls:SidebarView.Footer>
+			</controls:SidebarView.Header>
 		</controls:SidebarView>
 
 		<!--  Review Files Prompt  -->
